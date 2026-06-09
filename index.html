@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>交流会 受付 — 音声チェックイン</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#13161d;
+    --ink-2:#1a1f29;
+    --panel:#1f2531;
+    --panel-2:#272e3c;
+    --line:#3a4253;
+    --cream:#f3ede1;
+    --muted:#9aa3b4;
+    --gold:#cfa74e;
+    --gold-soft:#e6c574;
+    --green:#5ec27a;
+    --red:#d9695f;
+    --shadow:0 18px 40px rgba(0,0,0,.45);
+    --radius:18px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(207,167,78,.10), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(94,194,122,.06), transparent 55%),
+      var(--ink);
+    color:var(--cream);
+    font-family:"Zen Kaku Gothic New", system-ui, -apple-system, "Hiragino Kaku Gothic ProN", sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100%;
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;opacity:.04;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .wrap{max-width:560px;margin:0 auto;padding:0 16px 110px}
+
+  header{padding:22px 4px 14px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+  .brand{line-height:1.05}
+  .brand .kicker{font-size:11px;letter-spacing:.34em;color:var(--gold-soft);text-transform:uppercase;font-weight:700}
+  .brand h1{font-family:"Shippori Mincho",serif;font-weight:700;font-size:26px;margin:6px 0 0;letter-spacing:.04em}
+  .brand h1 small{display:block;font-family:"Zen Kaku Gothic New";font-size:12px;color:var(--muted);font-weight:500;letter-spacing:.08em;margin-top:4px}
+  .count{
+    text-align:right;background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--line);border-radius:14px;padding:10px 14px;min-width:104px;box-shadow:var(--shadow)
+  }
+  .count .big{font-family:"Shippori Mincho",serif;font-size:30px;font-weight:700;color:var(--gold-soft);line-height:1}
+  .count .big b{color:var(--cream)}
+  .count .lbl{font-size:10px;color:var(--muted);letter-spacing:.18em;margin-top:4px}
+
+  /* tabs */
+  .tabs{display:flex;gap:6px;background:var(--ink-2);border:1px solid var(--line);border-radius:14px;padding:5px;margin:6px 0 18px}
+  .tabs button{flex:1;border:0;background:transparent;color:var(--muted);font-family:inherit;font-weight:700;font-size:13px;
+    padding:11px 6px;border-radius:10px;letter-spacing:.06em;transition:.18s}
+  .tabs button.on{background:linear-gradient(180deg,var(--gold),#b8913c);color:#1b1405;box-shadow:0 6px 16px rgba(207,167,78,.3)}
+
+  section{display:none;animation:fade .25s ease}
+  section.on{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  /* mic */
+  .mic-stage{display:flex;flex-direction:column;align-items:center;padding:8px 0 4px}
+  .mic{
+    position:relative;width:148px;height:148px;border-radius:50%;border:0;cursor:pointer;
+    background:radial-gradient(circle at 50% 38%, #2a3243, #171c26);
+    box-shadow:0 0 0 1px var(--line), inset 0 2px 10px rgba(255,255,255,.05), var(--shadow);
+    color:var(--gold-soft);display:grid;place-items:center;transition:.2s
+  }
+  .mic:active{transform:scale(.97)}
+  .mic svg{width:54px;height:54px}
+  .mic .ring{position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--gold);opacity:0}
+  .mic.listening{color:#fff;background:radial-gradient(circle at 50% 38%, #3a2f12, #1a1408)}
+  .mic.listening .ring{opacity:.9;animation:pulse 1.4s ease-out infinite}
+  @keyframes pulse{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.5);opacity:0}}
+  .mic-hint{margin-top:14px;font-size:13px;color:var(--muted);letter-spacing:.04em;text-align:center;min-height:20px}
+  .mic-hint b{color:var(--gold-soft)}
+  .transcript{margin:12px auto 0;max-width:440px;text-align:center;font-family:"Shippori Mincho",serif;font-size:19px;
+    color:var(--cream);min-height:30px;letter-spacing:.04em}
+  .transcript:empty::before{content:"「○○株式会社の△△です」と話しかけてください";color:#5b647a;font-family:"Zen Kaku Gothic New";font-size:13px}
+
+  /* search */
+  .search{position:relative;margin:18px 0 12px}
+  .search input{width:100%;padding:14px 14px 14px 44px;border-radius:13px;border:1px solid var(--line);
+    background:var(--ink-2);color:var(--cream);font-family:inherit;font-size:16px;outline:none}
+  .search input:focus{border-color:var(--gold)}
+  .search svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--muted)}
+
+  /* candidate cards */
+  .cards{display:flex;flex-direction:column;gap:10px}
+  .card{
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid var(--line);
+    border-radius:var(--radius);padding:13px 14px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow)
+  }
+  .card.top{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold), var(--shadow)}
+  .card.done{opacity:.62}
+  .card .info{flex:1;min-width:0}
+  .card .co{font-size:12px;color:var(--muted);letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .nm{font-family:"Shippori Mincho",serif;font-size:21px;font-weight:700;margin-top:2px;letter-spacing:.03em}
+  .card .nm .yomi{font-family:"Zen Kaku Gothic New";font-size:11px;color:var(--muted);font-weight:500;margin-left:8px}
+  .conf{margin-top:7px;height:4px;border-radius:3px;background:#0d1118;overflow:hidden}
+  .conf i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-soft));border-radius:3px}
+  .conf-lbl{font-size:10px;color:var(--muted);margin-top:3px;letter-spacing:.1em}
+  .btn{
+    border:0;border-radius:12px;font-family:inherit;font-weight:700;font-size:14px;padding:13px 16px;cursor:pointer;
+    white-space:nowrap;transition:.15s;letter-spacing:.04em
+  }
+  .btn:active{transform:scale(.96)}
+  .btn-in{background:linear-gradient(180deg,var(--gold),#b8913c);color:#1b1405;box-shadow:0 6px 16px rgba(207,167,78,.28)}
+  .btn-done{background:#1c2a20;color:var(--green);border:1px solid #2c4634}
+  .btn-ghost{background:var(--ink-2);color:var(--muted);border:1px solid var(--line)}
+  .ref{display:inline-block;font-size:10px;color:var(--muted);letter-spacing:.04em;margin-top:5px;
+    background:#0e1219;border:1px solid var(--line);border-radius:6px;padding:2px 7px}
+  .ref b{color:var(--gold-soft);font-weight:700}
+  .roster-chip{text-align:center;font-size:12px;color:var(--muted);letter-spacing:.06em;margin:2px 0 6px}
+  .roster-chip b{color:var(--gold-soft);font-weight:700}
+  .roster-chip.warn{color:#1b1405;background:var(--gold);border-radius:10px;padding:8px;font-weight:700}
+  .verdict{font-size:13px;letter-spacing:.04em;color:var(--muted);margin:2px 2px 10px;font-weight:700}
+  .verdict.ok{color:var(--green);font-size:15px}
+  .verdict.warn{color:var(--gold-soft)}
+  .stamp{font-size:10px;color:var(--green);letter-spacing:.08em;margin-top:4px}
+
+  .empty{text-align:center;color:#5b647a;padding:34px 10px;font-size:14px;line-height:1.7}
+  .flash{position:fixed;inset:0;background:var(--green);opacity:0;pointer-events:none;z-index:50}
+  .flash.go{animation:fl .55s ease}
+  @keyframes fl{0%{opacity:0}15%{opacity:.22}100%{opacity:0}}
+
+  /* list */
+  .stats{display:flex;gap:8px;margin-bottom:14px}
+  .stat{flex:1;background:var(--ink-2);border:1px solid var(--line);border-radius:13px;padding:12px;text-align:center}
+  .stat .v{font-family:"Shippori Mincho",serif;font-size:24px;font-weight:700}
+  .stat .v.g{color:var(--green)}.stat .v.a{color:var(--gold-soft)}
+  .stat .k{font-size:10px;color:var(--muted);letter-spacing:.14em;margin-top:3px}
+  .row{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid #232a36}
+  .row .info{flex:1;min-width:0}
+  .row .co{font-size:11px;color:var(--muted)}
+  .row .nm{font-size:16px;font-weight:500;margin-top:1px}
+  .dot{width:9px;height:9px;border-radius:50%;background:#3a4253;flex:none}
+  .dot.on{background:var(--green);box-shadow:0 0 8px rgba(94,194,122,.7)}
+
+  /* settings */
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:12px;color:var(--gold-soft);letter-spacing:.08em;margin-bottom:7px;font-weight:700}
+  .field textarea,.field input{width:100%;background:var(--ink-2);border:1px solid var(--line);border-radius:12px;
+    color:var(--cream);font-family:inherit;font-size:15px;padding:12px;outline:none;resize:vertical}
+  .field textarea{min-height:120px;line-height:1.6;font-size:14px}
+  .field textarea:focus,.field input:focus{border-color:var(--gold)}
+  .hint{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.6}
+  .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .actions .btn{flex:1;min-width:130px}
+  .danger{color:var(--red);border-color:#4a2b2b!important}
+  .addrow{display:flex;gap:8px}
+  .addrow input{flex:1}
+  .note{background:var(--ink-2);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:10px;
+    padding:12px 14px;font-size:12px;color:var(--muted);line-height:1.75;margin-top:18px}
+  .note b{color:var(--cream)}
+  .toggle{display:flex;align-items:center;justify-content:space-between;background:var(--ink-2);border:1px solid var(--line);
+    border-radius:12px;padding:13px 14px;margin-bottom:12px}
+  .toggle .t{font-size:14px;font-weight:500}
+  .toggle .d{font-size:11px;color:var(--muted);margin-top:3px}
+  .sw{width:50px;height:30px;border-radius:30px;background:#333b4a;position:relative;border:0;cursor:pointer;flex:none;transition:.2s}
+  .sw i{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:.2s}
+  .sw.on{background:var(--gold)}.sw.on i{left:23px}
+</style>
+</head>
+<body>
+<div class="flash" id="flash"></div>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="kicker">Reception</div>
+      <h1 id="evTitle">交流会 受付<small id="evSub">音声チェックイン</small></h1>
+    </div>
+    <div class="count">
+      <div class="big"><span id="cIn">0</span><b> / <span id="cTotal">0</span></b></div>
+      <div class="lbl">CHECKED IN</div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="on" data-tab="reception">受付</button>
+    <button data-tab="list">参加者</button>
+    <button data-tab="settings">設定・取込</button>
+  </div>
+
+  <!-- 受付 -->
+  <section class="on" id="reception">
+    <div class="roster-chip" id="rosterChip"></div>
+    <div class="mic-stage">
+      <button class="mic" id="micBtn" aria-label="音声で受付">
+        <span class="ring"></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/><path d="M8 21h8"/>
+        </svg>
+      </button>
+      <div class="mic-hint" id="micHint">タップして話しかけてください</div>
+      <div class="transcript" id="transcript"></div>
+    </div>
+
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>
+      <input id="searchInput" type="search" placeholder="手入力で検索（会社名・氏名）" autocomplete="off">
+    </div>
+
+    <div class="cards" id="candidates"></div>
+  </section>
+
+  <!-- 参加者 -->
+  <section id="list">
+    <div class="stats">
+      <div class="stat"><div class="v" id="sTotal">0</div><div class="k">参加者</div></div>
+      <div class="stat"><div class="v g" id="sIn">0</div><div class="k">受付済</div></div>
+      <div class="stat"><div class="v a" id="sLeft">0</div><div class="k">未受付</div></div>
+    </div>
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>
+      <input id="listSearch" type="search" placeholder="絞り込み" autocomplete="off">
+    </div>
+    <div id="listRows"></div>
+  </section>
+
+  <!-- 設定・取込 -->
+  <section id="settings">
+    <div class="field">
+      <label>イベント名（任意）</label>
+      <input id="evNameInput" type="text" placeholder="例）2026 夏 ビジネス交流会">
+    </div>
+
+    <div class="toggle">
+      <div><div class="t">高信頼で自動確定</div><div class="d">候補が明確な時はワンタップ不要で即受付（取消可）</div></div>
+      <button class="sw" id="autoSw"><i></i></button>
+    </div>
+
+    <div class="field">
+      <label>参加者リストを取込（Excelファイル / 貼り付け）</label>
+      <div class="actions" style="margin:0 0 10px">
+        <label class="btn btn-in" style="text-align:center;cursor:pointer">
+          Excel/CSVファイルを選ぶ
+          <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" style="display:none">
+        </label>
+      </div>
+      <textarea id="csvInput" placeholder="◆ ファイル選択が使えない時は、Excelの表をそのままコピーしてここに貼り付け&#10;&#10;社名	氏名	参加可否	紹介者&#10;（社名）	（氏名）	〇	（紹介者）&#10;…&#10;&#10;※「会社名,氏名,よみがな」の単純な形式もそのまま読めます"></textarea>
+      <div class="hint">見出し行（社名／氏名／参加可否／紹介者 など）と連番(No)列・タイトル行が混ざっていても自動で判別して取り込みます。列名で対応づけるので、列の並び順が違っても大丈夫です。<b style="color:var(--gold-soft)">よみがな</b>列があれば同音異字に強くなります（任意）。</div>
+      <div class="actions">
+        <button class="btn btn-in" id="importReplace">取込（置き換え）</button>
+        <button class="btn btn-ghost" id="importAppend">追加で取込</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>1人ずつ追加</label>
+      <div class="addrow">
+        <input id="addCo" placeholder="会社名"><input id="addNm" placeholder="氏名">
+      </div>
+      <div class="addrow" style="margin-top:8px">
+        <input id="addYo" placeholder="よみがな（任意）">
+        <button class="btn btn-in" id="addBtn" style="flex:none;min-width:90px">追加</button>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-ghost" id="exportBtn">受付結果をCSV出力</button>
+      <button class="btn btn-ghost danger" id="resetCheck">受付状況をリセット</button>
+      <button class="btn btn-ghost danger" id="clearAll">全データ削除</button>
+    </div>
+
+    <div class="note" id="iosNote">
+      <b>iPhoneで使うときの注意。</b> マイク機能（音声受付）は <b>https</b> で開いた時のみ動きます。サーバーに置くか、社内のNext.js/PONTO!基盤に1ページ足すのが確実です。https環境なら、初回タップでマイク許可を出してください。<br>
+      <b>うるさい会場対策。</b> 騒音で聞き取れない時は、下段の<b>手入力検索</b>がそのまま使えます（音声と同じ候補ロジック）。<br>
+      <span id="srStatus"></span>
+    </div>
+  </section>
+
+</div>
+
+<script>
+"use strict";
+/* ---------- 保存（localStorage、使えない環境ではメモリにフォールバック） ---------- */
+const KEY="kouryukai_v1";
+let mem=null;
+function load(){
+  try{const r=localStorage.getItem(KEY);return r?JSON.parse(r):null;}catch(e){return mem;}
+}
+function save(){
+  state.participants=state.participants;
+  try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){mem=JSON.parse(JSON.stringify(state));}
+}
+const fresh={participants:[],eventName:"",auto:false};
+let state=load()||JSON.parse(JSON.stringify(fresh));
+if(!state.participants)state.participants=[];
+
+/* ---------- 文字正規化 ---------- */
+function kataToHira(s){return s.replace(/[\u30a1-\u30f6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60));}
+function norm(s){
+  if(!s)return "";
+  s=(""+s).toLowerCase();
+  s=s.replace(/[\uff01-\uff5e]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xfee0)); // 全角英数→半角
+  s=kataToHira(s);
+  s=s.replace(/(株式会社|有限会社|合同会社|合資会社|一般社団法人|社団法人|財団法人|\(株\)|（株）|㈱|\(有\)|（有）|㈲)/g,"");
+  s=s.replace(/(さん|さま|様|氏|くん|君|ちゃん|です|でーす|といいます|と言います|と申します|もうします|の)/g,"");
+  s=s.replace(/[\s\u3000・,，、。.\-―ー－_/]/g,"");
+  return s;
+}
+function bigrams(s){const a=[];for(let i=0;i<s.length-1;i++)a.push(s.slice(i,i+2));return a;}
+function dice(a,b){
+  if(!a||!b)return 0; if(a===b)return 1;
+  const A=bigrams(a),B=bigrams(b);
+  if(A.length===0||B.length===0)return a===b?1:0;
+  const m=new Map();for(const g of A)m.set(g,(m.get(g)||0)+1);
+  let hit=0;for(const g of B){const c=m.get(g)||0;if(c>0){hit++;m.set(g,c-1);}}
+  return 2*hit/(A.length+B.length);
+}
+// 発話（長文）の中から target に最も近い部分を探す
+function winSim(t,target){
+  if(!t||!target)return 0;
+  if(target.length===1)return t.includes(target)?0.78:0;
+  if(t.includes(target))return 1;
+  let best=dice(t,target);
+  const L=target.length;
+  for(const w of [L-1,L,L+1]){
+    if(w<2)continue;
+    for(let i=0;i+w<=t.length;i++){
+      const d=dice(t.slice(i,i+w),target);
+      if(d>best)best=d;
+    }
+  }
+  return best;
+}
+function scoreFor(text,p){
+  const t=norm(text);
+  const nName=norm(p.name), nYomi=norm(p.reading||""), nCo=norm(p.company);
+  const nameSim=Math.max(winSim(t,nName), nYomi?winSim(t,nYomi):0);
+  const coSim=winSim(t,nCo);
+  return 0.7*nameSim+0.3*coSim;
+}
+function rank(text,limit,min){
+  if(!norm(text))return [];
+  const th=(min===undefined)?0.2:min;
+  return state.participants
+    .map(p=>({p,s:scoreFor(text,p)}))
+    .filter(x=>x.s>th)
+    .sort((a,b)=>b.s-a.s)
+    .slice(0,limit||5);
+}
+
+/* ---------- 描画 ---------- */
+const $=id=>document.getElementById(id);
+function counts(){
+  const tot=state.participants.length, inn=state.participants.filter(p=>p.checkedIn).length;
+  $("cIn").textContent=inn;$("cTotal").textContent=tot;
+  $("sTotal").textContent=tot;$("sIn").textContent=inn;$("sLeft").textContent=tot-inn;
+  const chip=$("rosterChip");
+  if(chip){
+    chip.classList.toggle("warn",tot===0);
+    chip.innerHTML = tot? `名簿 <b>${tot}</b>名 読込済 ／ 受付 <b>${inn}</b>名`
+      : `⚠ 名簿が未取込です。「設定・取込」から読み込んでください`;
+  }
+}
+function timeStr(ts){const d=new Date(ts);return ("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);}
+
+function cardHTML(p,score){
+  const done=p.checkedIn;
+  const conf=Math.round(Math.min(1,score)*100);
+  return `<div class="card ${done?'done':''}" data-id="${p.id}">
+    <div class="info">
+      <div class="co">${esc(p.company||'—')}</div>
+      <div class="nm">${esc(p.name)}${p.reading?`<span class="yomi">${esc(p.reading)}</span>`:''}</div>
+      ${score!==undefined && !done?`<div class="conf"><i style="width:${conf}%"></i></div><div class="conf-lbl">一致度 ${conf}%</div>`:''}
+      ${done?`<div class="stamp">✓ 受付済 ${p.checkInTime?timeStr(p.checkInTime):''}</div>`:''}
+      ${p.referrer?`<div class="ref">紹介 <b>${esc(p.referrer)}</b></div>`:''}
+    </div>
+    ${done
+      ? `<button class="btn btn-done" data-act="undo" data-id="${p.id}">取消</button>`
+      : `<button class="btn btn-in" data-act="in" data-id="${p.id}">受付</button>`}
+  </div>`;
+}
+function esc(s){return (""+s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+
+let topId=null;
+function renderCandidates(text){
+  const box=$("candidates");
+  const q=text!==undefined?text:lastText;
+  // 入力なし
+  if(!q || !norm(q)){
+    topId=null;
+    box.innerHTML = state.participants.length
+      ? `<div class="empty">音声か手入力で参加者を呼び出します。<br>会社名・氏名のどちらか片方でもOKです。</div>`
+      : `<div class="empty">⚠ 参加者リストが空です。<br>「設定・取込」タブから名簿を取り込んでください。</div>`;
+    return;
+  }
+  // 名簿が空（照合できない）
+  if(!state.participants.length){
+    topId=null;
+    box.innerHTML=`<div class="empty">認識：「${esc(q)}」<br><br>⚠ 名簿が空のため照合できません。<br>「設定・取込」で名簿を取り込んでから受付してください。</div>`;
+    return;
+  }
+  // 通常照合
+  let res=rank(q,6,0.2), weak=false;
+  if(!res.length){ res=rank(q,3,0.001); weak=true; }   // 弱一致フォールバック（最も近い候補を提示）
+  topId = res.length?res[0].p.id:null;
+  if(!res.length){
+    box.innerHTML=`<div class="empty">認識：「${esc(q)}」<br>名簿${state.participants.length}名に一致する方が見つかりませんでした。<br>言い直すか、手入力でお試しください。</div>`;
+    return;
+  }
+  const top=res[0];
+  let head;
+  if(weak) head=`<div class="verdict warn">一致度が低い候補です（別の言い方・手入力もお試しを）</div>`;
+  else if(top.s>=0.5) head=`<div class="verdict ok">✓ 名簿に該当 — ${esc(top.p.name)} さん</div>`;
+  else head=`<div class="verdict">候補（タップで受付）</div>`;
+  box.innerHTML=head+res.map((x,i)=>cardHTML(x.p,x.s).replace('class="card ',`class="card ${i===0&&!weak?'top ':''}`)).join("");
+}
+let lastText="";
+
+function renderList(){
+  const q=norm($("listSearch").value);
+  const rows=state.participants
+    .filter(p=>!q || norm(p.company+p.name+(p.reading||"")).includes(q))
+    .sort((a,b)=>(a.checkedIn?1:0)-(b.checkedIn?1:0));
+  $("listRows").innerHTML = rows.length? rows.map(p=>`
+    <div class="row" data-act="toggle" data-id="${p.id}">
+      <span class="dot ${p.checkedIn?'on':''}"></span>
+      <div class="info"><div class="co">${esc(p.company||'—')}</div>
+      <div class="nm">${esc(p.name)} ${p.checkedIn&&p.checkInTime?`<span style="color:var(--green);font-size:11px">✓${timeStr(p.checkInTime)}</span>`:''}</div></div>
+    </div>`).join("") : `<div class="empty">該当なし</div>`;
+}
+function renderAll(){counts();renderCandidates();renderList();}
+
+/* ---------- チェックイン操作 ---------- */
+let beepCtx=null;
+function beep(){
+  try{beepCtx=beepCtx||new (window.AudioContext||window.webkitAudioContext)();
+    const o=beepCtx.createOscillator(),g=beepCtx.createGain();
+    o.connect(g);g.connect(beepCtx.destination);o.frequency.value=880;o.type="sine";
+    g.gain.setValueAtTime(.0001,beepCtx.currentTime);g.gain.exponentialRampToValueAtTime(.25,beepCtx.currentTime+.02);
+    g.gain.exponentialRampToValueAtTime(.0001,beepCtx.currentTime+.25);o.start();o.stop(beepCtx.currentTime+.26);
+  }catch(e){}
+}
+function checkIn(id){
+  const p=state.participants.find(x=>x.id===id);if(!p)return;
+  p.checkedIn=true;p.checkInTime=Date.now();save();
+  beep();$("flash").classList.remove("go");void $("flash").offsetWidth;$("flash").classList.add("go");
+  $("micHint").innerHTML=`<b>${esc(p.name)} さん</b> 受付完了`;
+  renderAll();
+}
+function undo(id){const p=state.participants.find(x=>x.id===id);if(!p)return;p.checkedIn=false;p.checkInTime=null;save();renderAll();}
+
+document.body.addEventListener("click",e=>{
+  const b=e.target.closest("[data-act]");if(!b)return;
+  const id=b.dataset.id, act=b.dataset.act;
+  if(act==="in")checkIn(id);
+  else if(act==="undo")undo(id);
+  else if(act==="toggle"){const p=state.participants.find(x=>x.id===id);if(p)p.checkedIn?undo(id):checkIn(id);}
+});
+
+/* ---------- 音声認識 ---------- */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let rec=null,listening=false;
+function setupSR(){
+  if(!SR){$("srStatus").innerHTML="<b style='color:var(--red)'>このブラウザは音声認識に未対応です。</b>手入力でご利用ください（Safari/Chrome推奨）。";return;}
+  $("srStatus").innerHTML="音声認識：利用可能。";
+  rec=new SR();rec.lang="ja-JP";rec.interimResults=true;rec.continuous=false;rec.maxAlternatives=3;
+  rec.onresult=ev=>{
+    let interim="",finalT="";
+    for(let i=0;i<ev.results.length;i++){
+      const r=ev.results[i];
+      const alt0=(r[0]&&r[0].transcript)||"";
+      if(r.isFinal){
+        let best=alt0,bestS=-1;
+        try{
+          for(let k=0;k<r.length;k++){
+            const c=rank((r[k]&&r[k].transcript)||"",1,0.001);
+            const s=c.length?c[0].s:0;
+            if(s>bestS){bestS=s;best=r[k].transcript;}
+          }
+        }catch(e){}
+        finalT+=best;
+      }else interim+=alt0;
+    }
+    const show=(finalT||interim).trim();
+    if(show){$("transcript").textContent=show;lastText=show;renderCandidates(show);}
+    if(finalT)afterFinal();
+  };
+  rec.onerror=ev=>{
+    endUI();
+    $("micHint").textContent = ev.error==="not-allowed"||ev.error==="service-not-allowed"
+      ? "マイクが許可されていません（設定で許可してください）"
+      : (ev.error==="no-speech" ? "声が拾えませんでした。もう一度どうぞ。" : "聞き取れませんでした。もう一度お試しを。");
+  };
+  rec.onend=()=>{
+    if(!listening)return;          // 手動停止/エラー処理済みなら何もしない
+    endUI();
+    if(lastText && norm(lastText)){ renderCandidates(lastText); afterFinal(); }
+    else $("micHint").textContent="声が拾えませんでした。もう一度どうぞ。";
+  };
+}
+function afterFinal(){
+  if(state.auto && topId){
+    const res=rank(lastText,2,0.2);
+    const clear = res.length && res[0].s>=0.8 && (res.length<2 || res[0].s-res[1].s>=0.18) && res[0].p.id===topId;
+    const p=state.participants.find(x=>x.id===topId);
+    if(clear && p && !p.checkedIn){checkIn(topId);return;}
+  }
+  if(!state.participants.length){$("micHint").innerHTML="<b>名簿が空です</b>。設定で取込を";return;}
+  $("micHint").innerHTML = topId ? '下の候補から<b>受付</b>を選んでください' : '一致なし。手入力でもお試しを';
+}
+function endUI(){listening=false;$("micBtn").classList.remove("listening");}
+function startListen(){
+  if(!rec){setupSR();if(!rec)return;}
+  try{beepCtx&&beepCtx.resume&&beepCtx.resume();}catch(e){}
+  lastText="";$("transcript").textContent="";
+  try{rec.start();}catch(e){ // 連打などで start 失敗時は一旦停止して再開
+    try{rec.stop();}catch(e2){} return;
+  }
+  listening=true;$("micBtn").classList.add("listening");$("micHint").textContent="お話しください…";
+}
+$("micBtn").addEventListener("click",()=>{
+  if(listening){try{rec.stop();}catch(e){}}   // onend 側で照合まで実行
+  else startListen();
+});
+
+/* ---------- 検索入力 ---------- */
+$("searchInput").addEventListener("input",e=>{lastText=e.target.value;renderCandidates(e.target.value);});
+$("listSearch").addEventListener("input",renderList);
+
+/* ---------- タブ ---------- */
+document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("on"));
+  document.querySelectorAll("section").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on");$(b.dataset.tab).classList.add("on");
+  if(b.dataset.tab==="list")renderList();
+}));
+
+/* ---------- 取込 / 追加 / 出力 ---------- */
+let uid=Date.now();
+function mkId(){return "p"+(uid++);}
+function splitCells(line){return line.split(/\t|,|，/).map(s=>s.trim());}
+function isHeaderRow(cells){
+  const j=cells.join("");
+  return /(社名|会社名|company)/i.test(j) && /(氏名|名前|お名前|name)/i.test(j);
+}
+function mapHeader(cells){
+  const m={company:-1,name:-1,reading:-1,referrer:-1,status:-1};
+  cells.forEach((c,i)=>{
+    if(m.company<0&&/(社名|会社名|company)/i.test(c))m.company=i;
+    else if(m.name<0&&/(氏名|名前|お名前|name)/i.test(c))m.name=i;
+    else if(m.reading<0&&/(よみ|ふりがな|フリガナ|カナ|かな|yomi|reading)/i.test(c))m.reading=i;
+    else if(m.referrer<0&&/(紹介者|紹介|referr)/i.test(c))m.referrer=i;
+    else if(m.status<0&&/(参加|出欠|可否|status)/i.test(c))m.status=i;
+  });
+  return m;
+}
+// 名簿テキスト（タイトル行・No列・任意の列順）を解析。{title, rows[]}
+function parseRoster(txt){
+  const lines=txt.split(/\r?\n/).filter(l=>l.replace(/[\t,，\s]/g,"")!=="");
+  let hi=-1,map=null,title="";
+  for(let i=0;i<lines.length;i++){
+    const c=splitCells(lines[i]);
+    if(isHeaderRow(c)){hi=i;map=mapHeader(c);break;}
+    if(!title){const t=(c[0]||"").trim();if(/交流会|名簿|リスト|参加者/.test(t))title=t;}
+  }
+  const rows=[];
+  if(hi>=0){
+    for(let i=hi+1;i<lines.length;i++){
+      const c=splitCells(lines[i]);
+      const name=(map.name>=0?c[map.name]:"")||"";
+      if(!name)continue;
+      rows.push({
+        company:(map.company>=0?c[map.company]:"")||"",
+        name, reading:(map.reading>=0?c[map.reading]:"")||"",
+        referrer:(map.referrer>=0?c[map.referrer]:"")||"",
+        status:(map.status>=0?c[map.status]:"")||""
+      });
+    }
+  }else{ // フォールバック：位置ベース 会社名,氏名,よみがな
+    for(const l of lines){
+      const c=splitCells(l);
+      if(c.length>=2 && /(会社名|社名|company)/i.test(c[0]) && /(氏名|名前|name)/i.test(c[1]))continue;
+      const name=c.length>=2?c[1]:c[0]; if(!name)continue;
+      rows.push({company:c.length>=2?c[0]:"",name,reading:c[2]||"",referrer:"",status:""});
+    }
+  }
+  return {title,rows};
+}
+function doImport(replace){
+  const {title,rows}=parseRoster($("csvInput").value);
+  if(!rows.length){alert("取り込める参加者の行が見つかりませんでした。\n社名・氏名の見出しがあるか確認してください。");return;}
+  const add=rows.map(r=>({id:mkId(),company:r.company,name:r.name,reading:r.reading,
+    referrer:r.referrer,status:r.status,checkedIn:false,checkInTime:null}));
+  state.participants = replace? add : state.participants.concat(add);
+  if(title && !state.eventName){
+    state.eventName=title.replace(/参加者リスト|参加者名簿|名簿|リスト/g,"").trim();
+    $("evNameInput").value=state.eventName;applyEvent();
+  }
+  save();renderAll();$("csvInput").value="";
+  alert(`${add.length}名を${replace?'取込（置き換え）':'追加'}しました。`);
+  document.querySelector('.tabs button[data-tab="reception"]').click();
+}
+$("importReplace").addEventListener("click",()=>doImport(true));
+$("importAppend").addEventListener("click",()=>doImport(false));
+$("addBtn").addEventListener("click",()=>{
+  const co=$("addCo").value.trim(),nm=$("addNm").value.trim(),yo=$("addYo").value.trim();
+  if(!nm){alert("氏名を入力してください。");return;}
+  state.participants.push({id:mkId(),company:co,name:nm,reading:yo,checkedIn:false,checkInTime:null});
+  save();$("addCo").value=$("addNm").value=$("addYo").value="";renderAll();
+});
+$("exportBtn").addEventListener("click",()=>{
+  const head="社名,氏名,よみがな,紹介者,参加可否,受付状況,受付時刻\n";
+  const body=state.participants.map(p=>[p.company,p.name,p.reading||"",p.referrer||"",p.status||"",
+    p.checkedIn?"受付済":"未受付",p.checkInTime?new Date(p.checkInTime).toLocaleString("ja-JP"):""]
+    .map(v=>`"${(""+v).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob=new Blob(["\ufeff"+head+body],{type:"text/csv"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download="受付結果_"+new Date().toISOString().slice(0,10)+".csv";a.click();
+});
+
+/* xlsx/csv ファイル選択 */
+function loadSheetJS(){
+  return new Promise((res,rej)=>{
+    if(window.XLSX)return res();
+    const s=document.createElement("script");
+    s.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    s.onload=()=>res();s.onerror=()=>rej(new Error("cdn"));
+    document.head.appendChild(s);
+  });
+}
+$("fileInput").addEventListener("change",async e=>{
+  const f=e.target.files&&e.target.files[0];if(!f)return;
+  const name=f.name.toLowerCase();
+  try{
+    if(name.endsWith(".csv")){
+      $("csvInput").value=await f.text();
+    }else{
+      await loadSheetJS();
+      const buf=await f.arrayBuffer();
+      const wb=XLSX.read(buf,{type:"array"});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const aoa=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:""});
+      $("csvInput").value=aoa.map(r=>r.map(c=>c==null?"":(""+c)).join("\t")).join("\n");
+    }
+    const {rows}=parseRoster($("csvInput").value);
+    if(rows.length && confirm(`「${f.name}」から ${rows.length}名 を読み取りました。\n今のリストを置き換えて取り込みますか？`)){
+      doImport(true);
+    }else{
+      alert("内容を下のテキスト欄に展開しました。確認して「取込」ボタンを押してください。");
+    }
+  }catch(err){
+    alert("ファイルの読み込みに失敗しました。\nオフライン等でExcel解析が使えない場合は、Excelの表をコピーして貼り付けてください。");
+  }
+  e.target.value="";
+});
+$("resetCheck").addEventListener("click",()=>{
+  if(!confirm("全員の受付状況をリセットします。よろしいですか？"))return;
+  state.participants.forEach(p=>{p.checkedIn=false;p.checkInTime=null;});save();renderAll();
+});
+$("clearAll").addEventListener("click",()=>{
+  if(!confirm("参加者リストを含む全データを削除します。元に戻せません。"))return;
+  state=JSON.parse(JSON.stringify(fresh));save();$("evNameInput").value="";applyEvent();renderAll();
+});
+
+/* ---------- イベント名 / 自動確定トグル ---------- */
+function applyEvent(){
+  $("evTitle").childNodes[0].nodeValue = state.eventName? state.eventName : "交流会 受付";
+}
+$("evNameInput").addEventListener("input",e=>{state.eventName=e.target.value;save();applyEvent();});
+$("autoSw").addEventListener("click",()=>{state.auto=!state.auto;$("autoSw").classList.toggle("on",state.auto);save();});
+
+/* ---------- 初期化 ---------- */
+$("evNameInput").value=state.eventName||"";
+$("autoSw").classList.toggle("on",!!state.auto);
+applyEvent();setupSR();renderAll();
+</script>
+</body>
+</html>
