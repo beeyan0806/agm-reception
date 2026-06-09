@@ -441,7 +441,8 @@ function renderList(){
     <div class="row" data-act="toggle" data-id="${p.id}">
       <span class="dot ${p.checkedIn?'on':''}"></span>
       <div class="info"><div class="co">${esc(p.company||'—')}</div>
-      <div class="nm">${esc(p.name)} ${p.checkedIn&&p.checkInTime?`<span style="color:var(--green);font-size:11px">✓${timeStr(p.checkInTime)}</span>`:''}</div></div>
+      <div class="nm">${esc(p.name)} ${p.checkedIn&&p.checkInTime?`<span style="color:var(--green);font-size:11px">✓${timeStr(p.checkInTime)}</span>`:''}</div>
+      ${p.referrer?`<div class="ref">紹介 <b>${esc(p.referrer)}</b></div>`:''}</div>
     </div>`).join("") : `<div class="empty">${emptyMsg}</div>`;
 }
 function renderAll(){counts();renderCandidates();renderList();}
