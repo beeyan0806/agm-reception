@@ -142,6 +142,8 @@
   .stat .v.g{color:var(--green)}.stat .v.a{color:var(--gold-soft)}
   .stat .k{font-size:10px;color:var(--muted);letter-spacing:.14em;margin-top:3px}
   .row{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid #232a36}
+  .row.arm{background:rgba(207,167,78,.12);border-radius:10px}
+  .row.arm::after{content:"もう一度タップで取消";font-size:10px;color:var(--gold-soft);font-weight:700;white-space:nowrap;letter-spacing:.04em}
   .row .info{flex:1;min-width:0}
   .row .co{font-size:11px;color:var(--muted)}
   .row .nm{font-size:16px;font-weight:500;margin-top:1px}
@@ -463,12 +465,25 @@ function checkIn(id){
 }
 function undo(id){const p=state.participants.find(x=>x.id===id);if(!p)return;p.checkedIn=false;p.checkInTime=null;save();renderAll();}
 
+let armId=null,armTime=0,armTimer=0;
 document.body.addEventListener("click",e=>{
   const b=e.target.closest("[data-act]");if(!b)return;
   const id=b.dataset.id, act=b.dataset.act;
   if(act==="in")checkIn(id);
   else if(act==="undo")undo(id);
-  else if(act==="toggle"){const p=state.participants.find(x=>x.id===id);if(p)p.checkedIn?undo(id):checkIn(id);}
+  else if(act==="toggle"){
+    const p=state.participants.find(x=>x.id===id);if(!p)return;
+    if(!p.checkedIn){checkIn(id);return;}            // 未受付：1タップで受付
+    // 受付済：ダブルタップ（2回連続タップ）で取消
+    const now=Date.now();
+    if(armId===id && now-armTime<500){               // 2回目 → 取消
+      clearTimeout(armTimer);armId=null;b.classList.remove("arm");undo(id);
+    }else{                                            // 1回目 → 構え（取消はしない）
+      if(armId){const prev=document.querySelector('.row.arm');if(prev)prev.classList.remove("arm");}
+      armId=id;armTime=now;b.classList.add("arm");
+      clearTimeout(armTimer);armTimer=setTimeout(()=>{armId=null;b.classList.remove("arm");},900);
+    }
+  }
 });
 
 /* ---------- 音声認識 ---------- */
