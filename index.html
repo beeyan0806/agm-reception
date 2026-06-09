@@ -135,7 +135,9 @@
 
   /* list */
   .stats{display:flex;gap:8px;margin-bottom:14px}
-  .stat{flex:1;background:var(--ink-2);border:1px solid var(--line);border-radius:13px;padding:12px;text-align:center}
+  .stat{flex:1;background:var(--ink-2);border:1px solid var(--line);border-radius:13px;padding:12px;text-align:center;cursor:pointer;transition:.15s}
+  .stat:active{transform:scale(.97)}
+  .stat.active{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
   .stat .v{font-family:"Shippori Mincho",serif;font-size:24px;font-weight:700}
   .stat .v.g{color:var(--green)}.stat .v.a{color:var(--gold-soft)}
   .stat .k{font-size:10px;color:var(--muted);letter-spacing:.14em;margin-top:3px}
@@ -217,9 +219,9 @@
   <!-- 参加者 -->
   <section id="list">
     <div class="stats">
-      <div class="stat"><div class="v" id="sTotal">0</div><div class="k">参加者</div></div>
-      <div class="stat"><div class="v g" id="sIn">0</div><div class="k">受付済</div></div>
-      <div class="stat"><div class="v a" id="sLeft">0</div><div class="k">未受付</div></div>
+      <div class="stat" data-filter="all"><div class="v" id="sTotal">0</div><div class="k">参加者</div></div>
+      <div class="stat" data-filter="in"><div class="v g" id="sIn">0</div><div class="k">受付済</div></div>
+      <div class="stat" data-filter="left"><div class="v a" id="sLeft">0</div><div class="k">未受付</div></div>
     </div>
     <div class="search">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>
@@ -424,17 +426,21 @@ function renderCandidates(text){
 }
 let lastText="";
 
+let listFilter="all";
 function renderList(){
   const q=norm($("listSearch").value);
-  const rows=state.participants
-    .filter(p=>!q || norm(p.company+p.name+(p.reading||"")).includes(q))
-    .sort((a,b)=>(a.checkedIn?1:0)-(b.checkedIn?1:0));
+  let rows=state.participants.filter(p=>!q || norm((p.company||"")+p.name+(p.reading||"")+(p.companyReading||"")).includes(q));
+  if(listFilter==="in") rows=rows.filter(p=>p.checkedIn);
+  else if(listFilter==="left") rows=rows.filter(p=>!p.checkedIn);
+  rows=rows.slice().sort((a,b)=>(a.checkedIn?1:0)-(b.checkedIn?1:0));
+  document.querySelectorAll('.stat').forEach(s=>s.classList.toggle('active', s.dataset.filter===listFilter));
+  const emptyMsg = listFilter==="left" ? "未受付の方はいません" : listFilter==="in" ? "受付済の方はいません" : "該当なし";
   $("listRows").innerHTML = rows.length? rows.map(p=>`
     <div class="row" data-act="toggle" data-id="${p.id}">
       <span class="dot ${p.checkedIn?'on':''}"></span>
       <div class="info"><div class="co">${esc(p.company||'—')}</div>
       <div class="nm">${esc(p.name)} ${p.checkedIn&&p.checkInTime?`<span style="color:var(--green);font-size:11px">✓${timeStr(p.checkInTime)}</span>`:''}</div></div>
-    </div>`).join("") : `<div class="empty">該当なし</div>`;
+    </div>`).join("") : `<div class="empty">${emptyMsg}</div>`;
 }
 function renderAll(){counts();renderCandidates();renderList();}
 
@@ -534,6 +540,7 @@ $("micBtn").addEventListener("click",()=>{
 /* ---------- 検索入力 ---------- */
 $("searchInput").addEventListener("input",e=>{lastText=e.target.value;renderCandidates(e.target.value);});
 $("listSearch").addEventListener("input",renderList);
+document.querySelectorAll('.stat').forEach(s=>s.addEventListener('click',()=>{listFilter=s.dataset.filter;renderList();}));
 
 /* ---------- タブ ---------- */
 document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>{
