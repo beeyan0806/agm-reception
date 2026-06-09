@@ -322,8 +322,9 @@ function dice(a,b){
 // 発話（長文）の中から target に最も近い部分を探す
 function winSim(t,target){
   if(!t||!target)return 0;
+  if(t.includes(target))return 1;                          // 発話の中に名前が含まれる（音声）
+  if(target.includes(t))return Math.max(0.55,t.length/target.length); // 入力が名前の一部（手入力・1文字でもヒット）
   if(target.length===1)return t.includes(target)?0.78:0;
-  if(t.includes(target))return 1;
   let best=dice(t,target);
   const L=target.length;
   for(const w of [L-1,L,L+1]){
