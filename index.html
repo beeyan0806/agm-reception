@@ -305,9 +305,12 @@ function norm(s){
   s=(""+s).toLowerCase();
   s=s.replace(/[\uff01-\uff5e]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xfee0)); // 全角英数→半角
   s=kataToHira(s);
+  // カナ表記ゆれの吸収：小書き→通常／濁点ゆれ／ヴ
+  s=s.replace(/[ぁぃぅぇぉっゃゅょゎ]/g,c=>({'ぁ':'あ','ぃ':'い','ぅ':'う','ぇ':'え','ぉ':'お','っ':'つ','ゃ':'や','ゅ':'ゆ','ょ':'よ','ゎ':'わ'}[c]));
+  s=s.replace(/ぢ/g,'じ').replace(/づ/g,'ず').replace(/ゔ/g,'ぶ');
   s=s.replace(/(株式会社|有限会社|合同会社|合資会社|一般社団法人|社団法人|財団法人|\(株\)|（株）|㈱|\(有\)|（有）|㈲)/g,"");
   s=s.replace(/(さん|さま|様|氏|くん|君|ちゃん|です|でーす|といいます|と言います|と申します|もうします|の)/g,"");
-  s=s.replace(/[\s\u3000・,，、。.\-―ー－_/]/g,"");
+  s=s.replace(/[\s\u3000・,，、。.\-―ー－\uff70_/]/g,"");
   return s;
 }
 function bigrams(s){const a=[];for(let i=0;i<s.length-1;i++)a.push(s.slice(i,i+2));return a;}
@@ -468,7 +471,7 @@ let rec=null,listening=false;
 function setupSR(){
   if(!SR){$("srStatus").innerHTML="<b style='color:var(--red)'>このブラウザは音声認識に未対応です。</b>手入力でご利用ください（Safari/Chrome推奨）。";return;}
   $("srStatus").innerHTML="音声認識：利用可能。";
-  rec=new SR();rec.lang="ja-JP";rec.interimResults=true;rec.continuous=false;rec.maxAlternatives=3;
+  rec=new SR();rec.lang="ja-JP";rec.interimResults=true;rec.continuous=false;rec.maxAlternatives=6;
   rec.onresult=ev=>{
     let interim="",finalT="";
     for(let i=0;i<ev.results.length;i++){
