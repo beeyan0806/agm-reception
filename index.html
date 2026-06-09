@@ -249,7 +249,7 @@
         </label>
       </div>
       <textarea id="csvInput" placeholder="◆ ファイル選択が使えない時は、Excelの表をそのままコピーしてここに貼り付け&#10;&#10;社名	氏名	参加可否	紹介者&#10;（社名）	（氏名）	〇	（紹介者）&#10;…&#10;&#10;※「会社名,氏名,よみがな」の単純な形式もそのまま読めます"></textarea>
-      <div class="hint">見出し行（社名／氏名／参加可否／紹介者 など）と連番(No)列・タイトル行が混ざっていても自動で判別して取り込みます。列名で対応づけるので、列の並び順が違っても大丈夫です。<b style="color:var(--gold-soft)">よみがな</b>列があれば同音異字に強くなります（任意）。</div>
+      <div class="hint">見出し行（社名／氏名／参加可否／紹介者 など）と連番(No)列・タイトル行が混ざっていても自動で判別して取り込みます。列名で対応づけるので、列の並び順が違っても大丈夫です。<b style="color:var(--gold-soft)">よみがな</b>列で同音異字に強くなります。英語・カナ・数字の社名（例：ACCOLADE）は音声で外れやすいので、<b style="color:var(--gold-soft)">社名よみ</b>（または「社名カナ」）列を作ってカタカナ読み（例：アコレード）を入れると当たるようになります（いずれも任意）。</div>
       <div class="actions">
         <button class="btn btn-in" id="importReplace">取込（置き換え）</button>
         <button class="btn btn-ghost" id="importAppend">追加で取込</button>
@@ -337,9 +337,9 @@ function winSim(t,target){
 }
 function scoreFor(text,p){
   const t=norm(text);
-  const nName=norm(p.name), nYomi=norm(p.reading||""), nCo=norm(p.company);
+  const nName=norm(p.name), nYomi=norm(p.reading||""), nCo=norm(p.company), nCoYomi=norm(p.companyReading||"");
   const nameSim=Math.max(winSim(t,nName), nYomi?winSim(t,nYomi):0);
-  const coSim=winSim(t,nCo);
+  const coSim=Math.max(winSim(t,nCo), nCoYomi?winSim(t,nCoYomi):0, nYomi?winSim(t,nYomi):0);
   return 0.7*nameSim+0.3*coSim;
 }
 function rank(text,limit,min){
@@ -548,13 +548,17 @@ function isHeaderRow(cells){
   return /(社名|会社名|company)/i.test(j) && /(氏名|名前|お名前|name)/i.test(j);
 }
 function mapHeader(cells){
-  const m={company:-1,name:-1,reading:-1,referrer:-1,status:-1};
+  const m={company:-1,name:-1,reading:-1,companyReading:-1,referrer:-1,status:-1};
+  const isYomi=x=>/(よみ|ふりがな|フリガナ|カナ|かな|yomi|reading|kana)/i.test(x);
   cells.forEach((c,i)=>{
-    if(m.company<0&&/(社名|会社名|company)/i.test(c))m.company=i;
-    else if(m.name<0&&/(氏名|名前|お名前|name)/i.test(c))m.name=i;
-    else if(m.reading<0&&/(よみ|ふりがな|フリガナ|カナ|かな|yomi|reading)/i.test(c))m.reading=i;
-    else if(m.referrer<0&&/(紹介者|紹介|referr)/i.test(c))m.referrer=i;
-    else if(m.status<0&&/(参加|出欠|可否|status)/i.test(c))m.status=i;
+    const co=/(社名|会社|company)/i.test(c), nm=/(氏名|名前|お名前|name)/i.test(c);
+    if(m.companyReading<0 && co && isYomi(c))m.companyReading=i;        // 社名よみ／社名カナ
+    else if(m.reading<0 && nm && isYomi(c))m.reading=i;                 // 氏名よみ
+    else if(m.reading<0 && isYomi(c) && !co)m.reading=i;               // 単独「よみ／カナ」
+    else if(m.company<0 && co)m.company=i;
+    else if(m.name<0 && nm)m.name=i;
+    else if(m.referrer<0 && /(紹介者|紹介|referr)/i.test(c))m.referrer=i;
+    else if(m.status<0 && /(参加|出欠|可否|status)/i.test(c))m.status=i;
   });
   return m;
 }
@@ -576,6 +580,7 @@ function parseRoster(txt){
       rows.push({
         company:(map.company>=0?c[map.company]:"")||"",
         name, reading:(map.reading>=0?c[map.reading]:"")||"",
+        companyReading:(map.companyReading>=0?c[map.companyReading]:"")||"",
         referrer:(map.referrer>=0?c[map.referrer]:"")||"",
         status:(map.status>=0?c[map.status]:"")||""
       });
@@ -585,7 +590,7 @@ function parseRoster(txt){
       const c=splitCells(l);
       if(c.length>=2 && /(会社名|社名|company)/i.test(c[0]) && /(氏名|名前|name)/i.test(c[1]))continue;
       const name=c.length>=2?c[1]:c[0]; if(!name)continue;
-      rows.push({company:c.length>=2?c[0]:"",name,reading:c[2]||"",referrer:"",status:""});
+      rows.push({company:c.length>=2?c[0]:"",name,reading:c[2]||"",companyReading:"",referrer:"",status:""});
     }
   }
   return {title,rows};
@@ -593,7 +598,7 @@ function parseRoster(txt){
 function doImport(replace){
   const {title,rows}=parseRoster($("csvInput").value);
   if(!rows.length){alert("取り込める参加者の行が見つかりませんでした。\n社名・氏名の見出しがあるか確認してください。");return;}
-  const add=rows.map(r=>({id:mkId(),company:r.company,name:r.name,reading:r.reading,
+  const add=rows.map(r=>({id:mkId(),company:r.company,name:r.name,reading:r.reading,companyReading:r.companyReading||"",
     referrer:r.referrer,status:r.status,checkedIn:false,checkInTime:null}));
   state.participants = replace? add : state.participants.concat(add);
   if(title && !state.eventName){
